@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Pin Caption Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo {
+      background: #E60023;
+      color: white;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0 auto 12px;
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #111;
+    }
+
+    header p {
+      color: #767676;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+
+    .upload-area {
+      border: 2px dashed #ddd;
+      border-radius: 14px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .upload-area:hover { border-color: #E60023; background: #fff5f5; }
+    .upload-area.has-image { border-color: #E60023; padding: 0; overflow: hidden; }
+
+    .upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-area img {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 12px;
+      display: block;
+    }
+
+    .upload-placeholder p { color: #767676; font-size: 14px; margin-top: 8px; }
+    .upload-placeholder .icon { font-size: 36px; }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: #E60023;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:hover { background: #ad081b; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .caption-box {
+      margin-top: 24px;
+      display: none;
+    }
+
+    .caption-box label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #767676;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .caption-text {
+      background: #f8f8f8;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 8px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #111;
+      white-space: pre-wrap;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px 0;
+      color: #767676;
+      font-size: 14px;
+      display: none;
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #eee;
+      border-top-color: #E60023;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">P</div>
+    <h1>AI Pin Caption Generator</h1>
+    <p>Upload any image and get a Pinterest-style caption powered by Claude AI</p>
+  </header>
+
+  <div class="card">
+
+    <div class="upload-area" id="uploadArea">
+      <input type="file" id="imageInput" accept="image/*" />
+      <div class="upload-placeholder" id="placeholder">
+        <div class="icon">📌</div>
+        <p><strong>Click to upload an image</strong></p>
+        <p>JPG, PNG, WEBP supported</p>
+      </div>
+      <img id="preview" style="display:none;" alt="Preview" />
+    </div>
+
+    <button class="btn" id="generateBtn" disabled>Generate Caption</button>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      Claude is reading your image...
+    </div>
+
+    <div class="caption-box" id="captionBox">
+      <label>Your Pinterest Caption</label>
+      <div class="caption-text" id="captionText"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const input = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+    const placeholder = document.getElementById('placeholder');
+    const uploadArea = document.getElementById('uploadArea');
+    const generateBtn = document.getElementById('generateBtn');
+    const loading = document.getElementById('loading');
+    const captionBox = document.getElementById('captionBox');
+    const captionText = document.getElementById('captionText');
+
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        uploadArea.classList.add('has-image');
+        generateBtn.disabled = false;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    generateBtn.addEventListener('click', async () => {
+      const file = input.files[0];
+      if (!file) return;
+
+      loading.style.display = 'block';
+      captionBox.style.display = 'none';
+      generateBtn.disabled = true;
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const response = await fetch('/generate', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        captionText.textContent = data.caption;
+        captionBox.style.display = 'block';
+      } catch (err) {
+        captionText.textContent = 'Something went wrong. Make sure the server is running.';
+        captionBox.style.display = 'block';
+      } finally {
+        loading.style.display = 'none';
+        generateBtn.disabled = false;
+      }
+    });
+  </script>
+
+</body>
+</html>
