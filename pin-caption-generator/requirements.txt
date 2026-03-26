@@ -1,0 +1,4 @@
+flask
+anthropic
+pillow
+python-dotenv
