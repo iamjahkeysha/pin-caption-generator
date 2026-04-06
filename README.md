@@ -41,4 +41,4 @@
 
 ## 👩‍💻 Author
 
-Made by [Jahkeysha](https://github.com/iamjahkeysha) · [LinkedIn](https://linkedin.com/in/yourprofile)
+Made by [Jahkeysha](https://github.com/iamjahkeysha)
