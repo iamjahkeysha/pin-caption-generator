@@ -4,7 +4,7 @@
 
 🌐 **Live Site:** [pin-caption-generator.onrender.com](https://pin-caption-generator.onrender.com)
 
-![Pin Caption Generator](screenshot.png)
+! [Pin Caption Generator](screenshot.png)
 
 ---
 
